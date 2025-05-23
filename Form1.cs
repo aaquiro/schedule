@@ -47,7 +47,7 @@ namespace ChildUsageEnforcer
 
             trayIcon = new NotifyIcon
             {
-                Text = "Child Usage Enforcer",
+                Text = "SysInfo",
                 Icon = SystemIcons.Application,
                 ContextMenuStrip = trayMenu,
                 Visible = true
