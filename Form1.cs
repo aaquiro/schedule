@@ -36,10 +36,8 @@ namespace ChildUsageEnforcer
 
         private async Task InitializeAsync()
         {
-            LoadSchedule(); // local file still OK or could also do async fetch
-
+            await LoadScheduleAsync();
             await LoadBlockedProcessesAsync();
-
             StartBackgroundTask();
         }
         private void InitializeTrayIcon()
@@ -56,23 +54,27 @@ namespace ChildUsageEnforcer
             };
         }
 
-        private void LoadSchedule()
+        private async Task LoadScheduleAsync()
         {
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "schedule.json");
-            if (File.Exists(path))
+            string url = "https://raw.githubusercontent.com/aaquiro/schedule/2d18d9b75139b7f04ebf50ccb7f2154dc933e583/schedule.json";
+
+            try
             {
-                string json = File.ReadAllText(path);
+                using HttpClient client = new HttpClient();
+                string json = await client.GetStringAsync(url);
                 schedule = JsonSerializer.Deserialize<ScheduleConfig>(json);
             }
-            else
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Failed to load schedule from URL: {ex.Message}");
                 schedule = new ScheduleConfig { AllowedTimeRanges = new List<TimeRange>() };
             }
         }
 
+
         private async Task LoadBlockedProcessesAsync()
         {
-            string url = "https://raw.githubusercontent.com/aaquiro/schedule/07b4861ee5c64f4a5df0611952406349abc39283/blocked_apps.json";
+            string url = "https://raw.githubusercontent.com/aaquiro/schedule/2d18d9b75139b7f04ebf50ccb7f2154dc933e583/blocked_apps.json";
 
             try
             {
