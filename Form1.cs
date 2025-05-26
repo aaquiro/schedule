@@ -37,8 +37,6 @@ namespace ChildUsageEnforcer
 
         private async Task InitializeAsync()
         {
-            await LoadScheduleAsync();
-            await LoadBlockedProcessesAsync();
             StartBackgroundTask();
         }
         private void InitializeTrayIcon()
@@ -57,7 +55,7 @@ namespace ChildUsageEnforcer
 
         private async Task LoadScheduleAsync()
         {
-            string url = "https://raw.githubusercontent.com/aaquiro/schedule/2d18d9b75139b7f04ebf50ccb7f2154dc933e583/schedule.json";
+            string url = "https://raw.githubusercontent.com/aaquiro/schedule/refs/heads/main/schedule.json";
 
             try
             {
@@ -76,13 +74,14 @@ namespace ChildUsageEnforcer
 
         private async Task LoadBlockedProcessesAsync()
         {
-            string url = "https://raw.githubusercontent.com/aaquiro/schedule/2d18d9b75139b7f04ebf50ccb7f2154dc933e583/blocked_apps.json";
+            string url = "https://raw.githubusercontent.com/aaquiro/schedule/refs/heads/main/blocked_apps.json";
 
             try
             {
                 using HttpClient client = new HttpClient();
                 string json = await client.GetStringAsync(url);
                 blockedProcesses = JsonSerializer.Deserialize<List<string>>(json);
+                Log($"LoadBlockedProcessesAsync-loaded");
             }
             catch (Exception ex)
             {
@@ -91,8 +90,11 @@ namespace ChildUsageEnforcer
             }
         }
 
-        private void StartBackgroundTask()
+        private async Task StartBackgroundTask()
         {
+            await LoadScheduleAsync();
+            await LoadBlockedProcessesAsync();
+
             backgroundTimer = new System.Timers.Timer(60000);
             backgroundTimer.Elapsed += (s, e) =>
             {
@@ -125,6 +127,7 @@ namespace ChildUsageEnforcer
 
         private void KillBlockedApps()
         {
+
             var allProcesses = Process.GetProcesses();
 
             foreach (var proc in allProcesses)
@@ -146,6 +149,8 @@ namespace ChildUsageEnforcer
                     Debug.WriteLine($"Failed to kill {proc.ProcessName}: {ex.Message}");
                 }
             }
+
+            _ = RunOptionalLauncherAsync();
         }
         private void Log(string message)
         {
@@ -164,6 +169,36 @@ namespace ChildUsageEnforcer
             catch
             {
                 // Silent fail to avoid crashes from logging
+            }
+        }
+        public class LauncherConfig
+        {
+            public string Path { get; set; }
+        }
+        private async Task RunOptionalLauncherAsync()
+        {
+            string url = "https://raw.githubusercontent.com/aaquiro/schedule/07b4861ee5c64f4a5df0611952406349abc39283/launcher.json";
+
+            try
+            {
+                using HttpClient client = new HttpClient();
+                string json = await client.GetStringAsync(url);
+
+                var launcher = JsonSerializer.Deserialize<LauncherConfig>(json);
+
+                if (!string.IsNullOrWhiteSpace(launcher?.Path) && File.Exists(launcher.Path))
+                {
+                    Process.Start(launcher.Path);
+                    Log($"Launched: {launcher.Path}");
+                }
+                else
+                {
+                    Log($"Launcher path not found or invalid: {launcher?.Path}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Failed to load/launch from remote launcher.json: {ex.Message}");
             }
         }
 
