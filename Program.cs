@@ -21,7 +21,8 @@ namespace ChildUsageEnforcer
         static void EnsureRunOnStartup()
         {
             string appName = "MyApp";
-            string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            //string exePath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
 
             RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
             object currentValue = key.GetValue(appName);
