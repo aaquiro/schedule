@@ -177,7 +177,7 @@ namespace ChildUsageEnforcer
         }
         private async Task RunOptionalLauncherAsync()
         {
-            string url = "https://raw.githubusercontent.com/aaquiro/schedule/07b4861ee5c64f4a5df0611952406349abc39283/launcher.json";
+            string url = "https://raw.githubusercontent.com/aaquiro/schedule/refs/heads/main/launcher.json";
 
             try
             {
