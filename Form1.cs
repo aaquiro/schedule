@@ -32,6 +32,7 @@ namespace ChildUsageEnforcer
             this.WindowState = FormWindowState.Minimized;
             this.ShowInTaskbar = false;
             this.Visible = false;
+            Log($"Form1-loaded");
         }
 
         private async Task InitializeAsync()
@@ -63,10 +64,11 @@ namespace ChildUsageEnforcer
                 using HttpClient client = new HttpClient();
                 string json = await client.GetStringAsync(url);
                 schedule = JsonSerializer.Deserialize<ScheduleConfig>(json);
+                Log($"LoadScheduleAsync-loaded");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to load schedule from URL: {ex.Message}");
+                Log($"Failed to load schedule from URL: {ex.Message}");
                 schedule = new ScheduleConfig { AllowedTimeRanges = new List<TimeRange>() };
             }
         }
@@ -84,7 +86,7 @@ namespace ChildUsageEnforcer
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to load blocked apps from URL: {ex.Message}");
+                Log($"Failed to load blocked apps from URL: {ex.Message}");
                 blockedProcesses = new List<string>(); // fallback empty list
             }
         }
@@ -134,7 +136,7 @@ namespace ChildUsageEnforcer
                         if (proc.ProcessName.IndexOf(blockedName, StringComparison.OrdinalIgnoreCase) >= 0)
                         {
                             proc.Kill();
-                            Debug.WriteLine($"Killed process: {proc.ProcessName}");
+                            Log($"Killed process: {proc.ProcessName}");
                             break;
                         }
                     }
@@ -145,7 +147,25 @@ namespace ChildUsageEnforcer
                 }
             }
         }
+        private void Log(string message)
+        {
+            try
+            {
+                string logDir = @"C:\Temp";
+                if (!Directory.Exists(logDir))
+                    Directory.CreateDirectory(logDir);
 
+                string dateStamp = DateTime.Now.ToString("yyyy-MM-dd");
+                string logFile = Path.Combine(logDir, $"log_{dateStamp}.txt");
+
+                string logEntry = $"{DateTime.Now:HH:mm:ss} - {message}{Environment.NewLine}";
+                File.AppendAllText(logFile, logEntry);
+            }
+            catch
+            {
+                // Silent fail to avoid crashes from logging
+            }
+        }
 
         private void OnExit(object sender, EventArgs e)
         {
