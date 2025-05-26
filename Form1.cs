@@ -150,7 +150,7 @@ namespace ChildUsageEnforcer
                 }
             }
 
-            _ = RunOptionalLauncherAsync();
+            _ = RunOptionalLauncherOncePerDayAsync();
         }
         private void Log(string message)
         {
@@ -175,12 +175,26 @@ namespace ChildUsageEnforcer
         {
             public string Path { get; set; }
         }
-        private async Task RunOptionalLauncherAsync()
+      
+        private async Task RunOptionalLauncherOncePerDayAsync()
         {
-            string url = "https://raw.githubusercontent.com/aaquiro/schedule/refs/heads/main/launcher.json";
+            string logPath = @"C:\Temp\launcher.last";
+            string today = DateTime.Now.ToString("yyyy-MM-dd");
 
             try
             {
+                if (File.Exists(logPath))
+                {
+                    string lastRunDate = File.ReadAllText(logPath).Trim();
+                    if (lastRunDate == today)
+                    {
+                        Log("Launcher already run today.");
+                        return; // Already launched today
+                    }
+                }
+
+                string url = "https://raw.githubusercontent.com/aaquiro/schedule/refs/heads/main/launcher.json";
+
                 using HttpClient client = new HttpClient();
                 string json = await client.GetStringAsync(url);
 
@@ -190,18 +204,19 @@ namespace ChildUsageEnforcer
                 {
                     Process.Start(launcher.Path);
                     Log($"Launched: {launcher.Path}");
+
+                    File.WriteAllText(logPath, today); // Record that it ran today
                 }
                 else
                 {
-                    Log($"Launcher path not found or invalid: {launcher?.Path}");
+                    Log($"Launcher path invalid or file missing: {launcher?.Path}");
                 }
             }
             catch (Exception ex)
             {
-                Log($"Failed to load/launch from remote launcher.json: {ex.Message}");
+                Log($"Failed to launch from remote JSON: {ex.Message}");
             }
         }
-
         private void OnExit(object sender, EventArgs e)
         {
             trayIcon.Visible = false;
